@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 
-setup(name="syndisc",
+setup(name="syndiscBETA",
         packages=find_packages(),
-        provides=["syndisc"],
+        provides=["syndiscBETA"],
         version="0.1",
-        author="Pedro Mediano and Fernando Rosas",
+        author="Mathis Wetterwald and Pedro Mediano",
         url="https://www.information-dynamics.org",
         install_requires=[
             "dit>=1.5",
+            "syndisc",
             "pypoman",
             "cvxopt",
             "numpy",
