@@ -1,0 +1,2 @@
+# syndiscBETA
+Python for AlphaBetaSynergy
