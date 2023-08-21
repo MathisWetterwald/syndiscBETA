@@ -6,7 +6,7 @@ Computes $\alpha\beta$-synergy.
 To obtain the figures presented in the report, please type :
 
 
-'''python
+```python
 
 import dit
 from syndiscBETA.PIDbeta import PID_SD_beta
@@ -28,6 +28,6 @@ def Xor_And():
   print(Xor_And())
 print(PID_SD_beta(Xor_And(), 2))
 
-'''
+```
 
 
