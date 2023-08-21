@@ -8,7 +8,7 @@ setup(name="syndiscBETA",
         url="https://www.information-dynamics.org",
         install_requires=[
             "dit>=1.5",
-            "syndisc @ git+ssh://git@github.com/pmediano/syndisc.git@main",
+            "syndisc @ git+https://github.com/pmediano/syndisc.git@main",
             "pypoman",
             "cvxopt",
             "numpy",
