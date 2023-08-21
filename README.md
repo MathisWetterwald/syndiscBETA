@@ -30,4 +30,5 @@ print(PID_SD_beta(Xor_And(), 2))
 
 ```
 
+The first column will be $\{ \alpha \}\{\beta\}$, and the second column will be the result of the algorithm. Please do not take the third column into account, which is here for compatibility reasons only.
 
