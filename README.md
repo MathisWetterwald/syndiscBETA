@@ -25,7 +25,7 @@ def Xor_And():
     outcomes = ['0000','0110', '1010', '1101']
     d = dit.Distribution(outcomes, pmf)
     return d
-  print(Xor_And())
+print(Xor_And())
 print(PID_SD_beta(Xor_And(), 2))
 
 ```
