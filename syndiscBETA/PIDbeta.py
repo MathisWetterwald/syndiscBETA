@@ -61,10 +61,10 @@ def _transform(lattice):
     return tuple_lattice
 
 
-def le2D(alpha,beta): 
+def le2D(alpha1,alpha2): 
     """
     Based on lattices.orderings
-    Compares two nodes of the lattice, returns alpha <= beta iff ... CHANGE ALPHA/BETA
+    Compares two nodes of the lattice, returns alpha1 <= alpha2 iff alpha1 and alpha2 follow the order relationship presented in the paper
     
     Parameters
     ----------
@@ -84,7 +84,7 @@ def le2D(alpha,beta):
             if not any(le(a,b)for b in y):
                 return False
         return True
-    return r_le(alpha [0],beta[0]) and r_le(alpha[1],beta[1])
+    return r_le(alpha1[0],alpha2[0]) and r_le(alpha1[1],alpha2[1])
 
 
 def full_constraint_lattice_2D(inputs, outputs):
@@ -205,6 +205,21 @@ class PID_SD_beta(BasePID):
         
     
     def get_red(self, node):
+        """
+        from dit.pid.pid
+        Get the redundancy value associated with `node`.
+
+        Parameters
+        ----------
+        node : tuple of iterable of iterables
+            The node to get the partial information of.
+
+        Returns
+        -------
+        pi : float
+            The partial information associated with `node`.
+        """
+        
         if node not in self._reds:
             if node not in self._lattice: 
                 raise Exception('Cannot get redundancy associated with node "%s" because it is in the lattice'
@@ -215,31 +230,57 @@ class PID_SD_beta(BasePID):
 
 
     def _measure(self, node):
+        """
+        Compute synergistic disclosure.
+        
+        Parameters
+        ----------
+        self : PID_SD_beta(BasePID)
+            The PID on which we are working.
+        node : tuple of iterables of iterables
+            The node we want to compute the partial information associated with.
+        
+        Returns
+        -------
+        synsolvebeta : float
+            The value of I_dis
+        """
+        
+        #obtain alpha and beta from the node
         alpha, beta = node
-            
+        
+        #if necessary, compute the polytope associated with alpha
         if len(node[0]) !=0 and node[0] not in self._poly_vert_X: 
             Const_X = build_constraint_matrix(node[0], self._dist.coalesce(self._inputs))
             Px = self.pX.pmf + 10**-40
             Px = Px/Px.sum()
             Px = np.array([Px]).T
             self._poly_vert_X[node[0]] = extreme_points(Const_X,Px)
-                
+        
+        #if necessary, compute the polytope associated with beta
         if len(node[1]) !=0 and node[1] not in self._poly_vert_Y: 
             Const_Y = build_constraint_matrix(node[1], self._dist.coalesce(self._outputs))
             Py = self.pY.pmf + 10**-40
             Py = Py/Py.sum()
             Py = np.array([Py]).T
             self._poly_vert_Y[node[1]] = extreme_points(Const_Y,Py)
-            
+        
+        #if alpha = {} and beta = {}, return coinforation between X and Y
         if len(node[1]) == 0 and len(node[0])==0:
             def foo(x):
                 return x[0]
             inputs = list(map(foo,self._inputs))
             outputs = list(map(foo,self._outputs))
             return coinformation(self._dist, [inputs, [k+len(self._inputs) for k in outputs]])
+        
+        #if beta = {}, compute alpha-synergy on X
         if len(node[1]) == 0 :
             return synsolve1D(self.pX.pmf, self.pYgX, self._poly_vert_X[node[0]])
+        
+        #if alpha = {}, compute beta-synergy on Y
         if len(node[0]) == 0 :
             return synsolve1D(self.pY.pmf, self.pXgY, self._poly_vert_Y[node[1]])
+        
+        #if alpha != {} and beta != {}, compute alphabetasynergy on X and Y
         else:
             return synsolvebeta(self.pY.pmf, self.pX.pmf, self.pYgX, self._poly_vert_X[node[0]], self._poly_vert_Y[node[1]], **self._kwargs)
