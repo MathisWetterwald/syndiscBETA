@@ -20,4 +20,13 @@ d = dit.Distribution(outcomes,pmf)
 #create PID object
 pid = PID_SD_beta(d,X=[0,1],Y=[2,3]) #X=[0,1] : X system is the first two atoms ; Y=[2,3] : Y system is the last two
 ```
-
+## 1 : Assess the full synergistic decomposition of information
+```python
+pid1 = PID_SD_beta(Xor_And(), X=[0,1], Y=[2,3],method='polytope', table='2D')
+pid2 = PID_SD_beta(Xor_And(), X=[0,1], Y=[2,3],method='scipy', table='2D')
+pid3 = PID_SD_beta(Xor_And(), X=[0,1,2], Y=[3],method='polytope', table='1D')
+print(pid1)
+print(pid2)
+print(pid3)
+```
+```method='polytope'``` is faster
