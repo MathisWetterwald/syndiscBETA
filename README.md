@@ -29,4 +29,4 @@ print(pid1)
 print(pid2)
 print(pid3)
 ```
-```method='polytope'``` is faster
+```method='polytope'``` is faster but fails in rare cases. In those cases, use ```python method='scipy'```
