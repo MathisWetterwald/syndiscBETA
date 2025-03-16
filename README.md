@@ -3,32 +3,21 @@ Python for AlphaBetaSynergy
 
 Computes $\alpha\beta$-synergy.
 
-To obtain the figures presented in the report, please type :
+This package gives multiple ways of playing around with synergy.
 
-
+## 0 : Create a PID object
 ```python
-
+#imports
+import numpy as np
 import dit
-from syndiscBETA.PIDbeta import PID_SD_beta
+from syndiscBETA.pid import PID_SD_beta
 
-def Xor_Xor():
-    pmf = [1/8]*8
-    outcomes = ['0000','0011', '1100', '1111', '0101','0110','1001','1010']
-    d = dit.Distribution(outcomes, pmf)
-    return d
+#create distribution
+pmf = [1/4,1/4,1/4,1/4]
+outcomes = ['0000','0101','1001','1111']
+d = dit.Distribution(outcomes,pmf)
 
-print(Xor_Xor())
-print(PID_SD_beta(Xor_Xor(), 2))
-
-def Xor_And():
-    pmf = [1/4]*4
-    outcomes = ['0000','0110', '1010', '1101']
-    d = dit.Distribution(outcomes, pmf)
-    return d
-print(Xor_And())
-print(PID_SD_beta(Xor_And(), 2))
-
+#create PID object
+pid = PID_SD_beta(d,X=[0,1],Y=[2,3]) #X=[0,1] : X system is the first two atoms ; Y=[2,3] : Y system is the last two
 ```
-
-The first column will be $\{ \alpha \}\{\beta\}$, and the second column will be the result of the algorithm. Please do not take the third column into account, which is here for compatibility reasons only.
 
