@@ -10,7 +10,7 @@ setup(name="syndiscBETA",
             "dit>=1.5",
             "pypoman",
             "cvxopt",
-            "numpy",
+            "numpy<=1.7",
             "scipy",
             "networkx>=3.1",
             "matplotlib",   # Actually required by pypoman
