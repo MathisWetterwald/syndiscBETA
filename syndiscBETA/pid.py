@@ -27,7 +27,7 @@ from lattices.constraints import is_antichain
 from operator import le
 from copy import deepcopy
 from dit.pid.pid import _transform, sort_key
-from .syndisc import build_constraint_matrix
+from .syndisc import build_constraint_matrix, decompose_information, build_list_atoms
 from .solver import synsolvebeta, synsolve1D, extreme_points
 
 def full_constraint_lattice(elements):
@@ -204,11 +204,9 @@ class PID_SD_beta(BasePID):
         self._inputs = tuple(map(tuple, inputs))
         self._outputs = tuple(map(tuple, outputs))
         
-        #build the lattice, init dictionaries
-        self._lattice = full_constraint_lattice_2D(self._inputs, self._outputs)
+        #init dictionaries
         self._reds = {}
         self._pis = {}
-        
         self._poly_vert_X = {}
         self._poly_vert_Y = {}
         
@@ -238,8 +236,8 @@ class PID_SD_beta(BasePID):
                 count += 1
         
         #for each node, build the polytopes
-        for node in self._lattice._lattice:
-            pass
+        #for node in self._lattice._lattice:
+        #    pass
         
     
     def get_red(self, node):
@@ -360,7 +358,7 @@ class PID_SD_beta(BasePID):
         """
         return self.to_string()
 
-    def to_string(self, digits=4):
+    def to_string(self, digits=4, backbone=False, **kwargs):
         """
         Create a table representing the redundancy and PI lattices.
 
@@ -374,7 +372,46 @@ class PID_SD_beta(BasePID):
         table : str
             The table of values.
         """
-        kwargs = self._kwargs
+        #if backbone, return the backbone lattice
+        if backbone:
+            #definition of u and v (default is id)
+            if 'u' in kwargs:
+                u = kwargs['u']
+            else:
+                if len(self._inputs)==1:
+                    u = lambda x:0
+                else:
+                    u = lambda x : x
+            if 'v' in kwargs:
+                v = kwargs['v']
+            else:
+                if len(self._outputs)==1:
+                    v = lambda x:0
+                else:
+                    v = lambda x : x
+            kwargs['u'] = u
+            kwargs['v'] = v
+
+            #obtain the backbone atoms
+            list_atoms,list_values,list_deltas = decompose_information(self, **kwargs)
+
+            #build the table
+            table = build_table(['i,j',r'B^{i,j}',r'dB^{i,j}'],'synergy atoms')
+            table.float_format = '{}.{}'.format(6, 4)
+            for i in range(len(list_atoms)):
+                row = [(u(i),v(i)),list_values[i],list_deltas[len(list_atoms)-1-i]]
+                table.add_row(row)
+            
+            #return table
+            return table.get_string()
+        
+        #if not backbone, build the full lattice
+        self._lattice = full_constraint_lattice_2D(self._inputs, self._outputs)
+
+        if len(self._outputs)!=1 :
+            if 'table' in kwargs and kwargs['table'] != '2D':
+                raise Exception('when "table" is not "2D", len(Y) should be 1')    
+
         if 'table' in kwargs:
             if kwargs['table'] == '2D':
                 
@@ -389,13 +426,18 @@ class PID_SD_beta(BasePID):
                 
                 #specifically, print the row of betas
                 for beta in beta_list:
-                    beta_list_title.append(''.join('{{{}}}'.format(':'.join(map(str, n))) for n in beta))
+                    beta_label = ''.join('{{{}}}'.format(':'.join(map(str, n))) for n in beta)
+                    if beta_label=='':
+                        beta_label = '∅'
+                    beta_list_title.append(beta_label)
                 table = build_table(beta_list_title, self._name)
                 table.float_format = '{}.{}'.format(digits + 2, digits)
                 
                 for alpha in alpha_list:
                     #and for each alpha in the row of possible alphas, print the line of alpha-beta synergies
                     alpha_label = ''.join('{{{}}}'.format(':'.join(map(str, n))) for n in alpha)
+                    if alpha_label=='':
+                        alpha_label='∅'
                     row_alpha = [alpha_label]
                     
                     for beta in beta_list:
@@ -412,16 +454,13 @@ class PID_SD_beta(BasePID):
             #verify the table is properly set to 1D
             elif kwargs['table'] != '1D':
                 raise Exception('table should be "1D" or "2D". Currently, it is "%s".' % kwargs['table'])
-        if len(self._outputs)!=1 :
-            raise Exception('when "table" is set to "1D", len(Y) should be 1')
         
         
-        red_string = self._red_string
-        pi_string = self._pi_string
+        red_string = "S^(a,b)"
+        pi_string = "dS^(a,b)"
         
         #pre-build the table
-        
-        table = build_table([self.name, red_string, pi_string], title=getattr(self._dist, 'name', ''))
+        table = build_table(['alpha:beta', red_string, pi_string], title=getattr(self._dist, 'name', ''))
 
         table.float_format[red_string] = '{}.{}'.format(digits + 2, digits)
         table.float_format[pi_string] = '{}.{}'.format(digits + 2, digits)
@@ -432,7 +471,11 @@ class PID_SD_beta(BasePID):
                 
                 #handle the format 
                 alpha_label = ''.join('{{{}}}'.format(':'.join(map(str, n))) for n in node[0])
+                if alpha_label=='':
+                    alpha_label = '∅'
                 beta_label = ''.join('{{{}}}'.format(':'.join(map(str, n))) for n in node[1])
+                if beta_label=='':
+                    beta_label='∅'
                 node_label = ':'.join([alpha_label, beta_label])
                 
                 #get the red_value. actual computation is here
