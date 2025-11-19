@@ -63,7 +63,7 @@ def extreme_points(P, Px, SVDmethod='standard'):
 
     # Extract reduced A matrix using a small threshold to avoid numerical
     # problems
-    rankP = np.sum(S > 1e-6)
+    rankP = np.sum(S > 1e-20)
     A = Vh[:rankP,:]
     b = np.matmul(A,Px)
     
@@ -73,12 +73,12 @@ def extreme_points(P, Px, SVDmethod='standard'):
 
     # Build polytope and find extremes
     A = np.vstack([A, -A, -np.eye(A.shape[1])])
-    b = np.hstack([b, -b, np.zeros(A.shape[1])])
+    b = np.hstack([b+1e-18, -b+1e-18, np.zeros(A.shape[1])])
     V = pm.compute_polytope_vertices(A, b)  # <-- magic happens here
     V = np.vstack(V)
     
     # To avoid numerical problems, manually cast all small negative values to 0
-    if np.any(V < -1e-6):
+    if np.any(V < -1e-8):
         raise RuntimeError("Polytope vertices computation failed \
                 (found negative vertices).")
     V[V < 0] = 0
@@ -88,7 +88,7 @@ def extreme_points(P, Px, SVDmethod='standard'):
     
     # Eliminate vertices that are too similar (distance less than 1e-10)
     SS = cdist(V,V)
-    BB = SS<1e-10
+    BB = SS<1e-7
     indices = [BB[:i,i].sum() for i in range(len(V))]
     idx = [bool(1-indices[i]) for i in range(len(indices))]
     
@@ -228,7 +228,7 @@ def synsolvebeta(pY, pX, pYgX, pXgU, pYgV, **kwargs):
                 C_yx[y,x] = 0
             else :
                 C_yx[y,x] = pYgX[y,x]/pY[y]
-    
+
     #Computing C_vu
     C_vu = np.zeros((a,b))
     A = np.zeros((a,b))
@@ -262,7 +262,7 @@ def synsolvebeta(pY, pX, pYgX, pXgU, pYgV, **kwargs):
     
     #Compute the polytope for pU
     A1 = np.vstack([pXgU.T, -pXgU.T, - np.eye(pXgU.shape[0])])
-    C1 = np.hstack([pX+1e-12, -pX-1e-12, np.zeros(pXgU.shape[0])])
+    C1 = np.hstack([pX+1e-12, -pX+1e-12, np.zeros(pXgU.shape[0])])
     V1 = pm.compute_polytope_vertices(A1, C1)
     if len(V1)==0:
         raise Exception('should use scipy on this one !')
@@ -285,18 +285,18 @@ def synsolvebeta(pY, pX, pYgX, pXgU, pYgV, **kwargs):
     
     #compute the polytope for pV
     A2 = np.vstack([pYgV.T, -pYgV.T, - np.eye(pYgV.shape[0])])
-    C2 = np.hstack([pY+1e-8, -pY-1e-8, np.zeros(pYgV.shape[0])])
+    C2 = np.hstack([pY+1e-12, -pY+1e-12, np.zeros(pYgV.shape[0])])
     V2 = pm.compute_polytope_vertices(A2, C2)
     V2 = np.vstack(V2)
     
     #To avoid numerical problems, manually cast all small negative values to 0
-    if np.any(V2 < -1e-6):
+    if np.any(V2 < -1e-10):
         raise RuntimeError("Polytope vertices computation failed : (found negative vertices).")
     V2[V2<0] = 0
     
     #Eliminate vertices too close of each other
     SS = cdist(V2,V2)
-    BB = SS<1e-10
+    BB = SS<1e-8
     indices = [BB[:i,i].sum() for i in range(len(V2))]
     idx = [bool(1-indices[i]) for i in range(len(indices))]
     V2 = V2[idx]
@@ -312,7 +312,7 @@ def synsolvebeta(pY, pX, pYgX, pXgU, pYgV, **kwargs):
             I = res
             u = pU
             v = pV
-    channel_dict = {'pU': u, 'pV': v, 'pXgU': pXgU}#, 'pYgV' : pYgV, 'pUgX': pVgA}
+    channel_dict = {'pU': u, 'pV': v, 'pXgU': pXgU, 'pYgV': pYgV}#, 'pYgV' : pYgV, 'pUgX': pVgA}
     return I, channel_dict
 
     
