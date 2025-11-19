@@ -61,7 +61,21 @@ def build_constraint_matrix(cons, d):
     return P
 
 def build_list_atoms(system,**kwargs):
-    if kwargs == {}:
+    '''
+    Builds the nodes belonging to one given backbone lattice
+
+    Parameters
+    ----------
+    system : PID_SD object
+    u and v (optional) : functions that code the desired backbone lattice
+
+    Returns
+    -------
+    list of nodes
+    '''
+
+    #general case, where u and v are not specified
+    if not 'u' in kwargs and not 'v' in kwargs:
         n = len(system._inputs)
         inputs = tuple(chain.from_iterable(system._inputs))
         outputs = tuple(chain.from_iterable(system._outputs))
@@ -70,6 +84,8 @@ def build_list_atoms(system,**kwargs):
             node = tuple(combinations(inputs, i)),tuple(combinations(outputs,i))
             list_atoms.append(node)
         return list_atoms
+    
+    #if u and v are specified, follow them
     else:
         if not 'u' in kwargs or not 'v' in kwargs:
             raise Exception('u and v must be defined')
@@ -79,32 +95,43 @@ def build_list_atoms(system,**kwargs):
         inputs = tuple(chain.from_iterable(system._inputs))
         outputs = tuple(chain.from_iterable(system._outputs))
         list_atoms = []
-        for i in range(n+m+1):
+        i=0
+        while u(i)<=n and v(i)<=m:
             node = tuple(combinations(inputs, u(i))),tuple(combinations(outputs,v(i)))
             list_atoms.append(node)
+            i+=1
         return list_atoms
+
+
 def decompose_information(system,**kwargs):
-    if len(system._inputs) != len(system._outputs) and kwargs == {} :
-        raise Exception('if nothing is specified, X and Y should have the same length')
+    """
+    Decomposes information according to the backbone lattice.
+
+    Parameters
+    ----------
+    system : PID_SD object
+    u, v : optional. functions that code the backbone decomposition
+
+    Return
+    ------
+    list of atoms computed, list of synergistic capacities, list of synergy atoms
+    """
+
+    #Raise error if necessary
+    #if len(system._inputs) != len(system._outputs) and kwargs == {} :
+    #    raise Exception('if nothing is specified, X and Y should have the same length')
+    
+    #compute the list of nodes
     list_atoms = build_list_atoms(system,**kwargs)
-    if 'u' in kwargs:
-        u = kwargs['u']
-    else:
-        u = lambda x : x
-    if 'v' in kwargs:
-        v = kwargs['v']
-    else:
-        v = lambda x : x
-    table = build_table(['i,j',r'B^{i,j}',r'dB^{i,j}'],'synergy atoms')
-    table.float_format = '{}.{}'.format(6, 4)
+    
+    #Compute the synergistic capacities for each studied node
     list_values = []
     for i in range(len(list_atoms)):
         list_values.append(system.disclosure(list_atoms[i])[0])
+    
+    #do the Mobius inversion to obtain the atoms
     list_deltas = []
     for i in range(0,len(list_atoms)):
         list_deltas.append(list_values[len(list_atoms)-1-i]-sum(list_deltas))
-    for i in range(len(list_atoms)):
-        row = [(u(i),v(i)),list_values[i],list_deltas[len(list_atoms)-1-i]]
-        table.add_row(row)
-    print(table)
+
     return list_atoms,list_values,list_deltas
